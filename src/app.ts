@@ -1,8 +1,14 @@
 import { Elysia, t } from "elysia";
 import { config } from "./lib/config";
 import { failure, success } from "./lib/response";
+import { createUsersRoutes } from "./routes/users-routes";
+import { registerUser, type RegisterUserFn } from "./services/users-service";
 
-export const createApp = (): Elysia =>
+type CreateAppDeps = {
+  registerUser?: RegisterUserFn;
+};
+
+export const createApp = (deps: CreateAppDeps = {}): Elysia =>
   new Elysia({ prefix: config.apiPrefix })
     .onError(({ code, error, set }) => {
       if (code === "VALIDATION") {
@@ -19,4 +25,5 @@ export const createApp = (): Elysia =>
     .get("/", () => success({ service: "api-template", version: "v1" }), {
       detail: { hide: true },
       response: t.Any(),
-    });
+    })
+    .use(createUsersRoutes(deps.registerUser ?? registerUser));
