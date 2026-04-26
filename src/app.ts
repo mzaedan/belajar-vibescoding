@@ -3,6 +3,8 @@ import { config } from "./lib/config";
 import { failure, success } from "./lib/response";
 import { createUsersRoutes } from "./routes/users-routes";
 import {
+  getCurrentUserByToken,
+  type GetCurrentUserFn,
   loginUser,
   registerUser,
   type LoginUserFn,
@@ -12,6 +14,7 @@ import {
 type CreateAppDeps = {
   registerUser?: RegisterUserFn;
   loginUser?: LoginUserFn;
+  getCurrentUserByToken?: GetCurrentUserFn;
 };
 
 export const createApp = (deps: CreateAppDeps = {}): Elysia =>
@@ -36,5 +39,6 @@ export const createApp = (deps: CreateAppDeps = {}): Elysia =>
       createUsersRoutes({
         registerUser: deps.registerUser ?? registerUser,
         loginUser: deps.loginUser ?? loginUser,
+        getCurrentUserByToken: deps.getCurrentUserByToken ?? getCurrentUserByToken,
       }),
     );

@@ -18,6 +18,15 @@ export type LoginUserInput = {
 
 export type LoginUserFn = (input: LoginUserInput) => Promise<string>;
 
+export type CurrentUser = {
+  id: number;
+  name: string;
+  email: string;
+  createdAt: Date | string;
+};
+
+export type GetCurrentUserFn = (token: string) => Promise<CurrentUser>;
+
 export class EmailAlreadyRegisteredError extends Error {
   constructor() {
     super("Email sudah terdaftar");
@@ -29,6 +38,13 @@ export class InvalidLoginError extends Error {
   constructor() {
     super("Email atau password Salah");
     this.name = "InvalidLoginError";
+  }
+}
+
+export class UnauthorizedError extends Error {
+  constructor() {
+    super("Unauthorized");
+    this.name = "UnauthorizedError";
   }
 }
 
@@ -102,4 +118,30 @@ export const loginUser: LoginUserFn = async (input) => {
   });
 
   return token;
+};
+
+export const getCurrentUserByToken: GetCurrentUserFn = async (token) => {
+  const normalizedToken = token.trim();
+
+  if (!normalizedToken) {
+    throw new UnauthorizedError();
+  }
+
+  const userBySession = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      createdAt: users.createdAt,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(sessions.userId, users.id))
+    .where(eq(sessions.token, normalizedToken))
+    .limit(1);
+
+  if (userBySession.length === 0) {
+    throw new UnauthorizedError();
+  }
+
+  return userBySession[0];
 };
