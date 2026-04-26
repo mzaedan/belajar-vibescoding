@@ -2,10 +2,16 @@ import { Elysia, t } from "elysia";
 import { config } from "./lib/config";
 import { failure, success } from "./lib/response";
 import { createUsersRoutes } from "./routes/users-routes";
-import { registerUser, type RegisterUserFn } from "./services/users-service";
+import {
+  loginUser,
+  registerUser,
+  type LoginUserFn,
+  type RegisterUserFn,
+} from "./services/users-service";
 
 type CreateAppDeps = {
   registerUser?: RegisterUserFn;
+  loginUser?: LoginUserFn;
 };
 
 export const createApp = (deps: CreateAppDeps = {}): Elysia =>
@@ -26,4 +32,9 @@ export const createApp = (deps: CreateAppDeps = {}): Elysia =>
       detail: { hide: true },
       response: t.Any(),
     })
-    .use(createUsersRoutes(deps.registerUser ?? registerUser));
+    .use(
+      createUsersRoutes({
+        registerUser: deps.registerUser ?? registerUser,
+        loginUser: deps.loginUser ?? loginUser,
+      }),
+    );

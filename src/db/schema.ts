@@ -11,3 +11,16 @@ export const users = mysqlTable(
   },
   (table) => [uniqueIndex("users_email_unique").on(table.email)],
 );
+
+export const sessions = mysqlTable(
+  "sessions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    token: varchar("token", { length: 255 }).notNull(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("sessions_token_unique").on(table.token)],
+);
