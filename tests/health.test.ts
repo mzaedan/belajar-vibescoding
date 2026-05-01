@@ -13,4 +13,13 @@ describe("api-template", () => {
     expect(body.data.status).toBe("ok");
     expect(body.error).toBeNull();
   });
+
+  it("does not allow unsupported method for health endpoint", async () => {
+    const app = createApp();
+    const response = await app.handle(
+      new Request("http://localhost/api/health", { method: "POST" }),
+    );
+
+    expect(response.status).toBe(404);
+  });
 });
