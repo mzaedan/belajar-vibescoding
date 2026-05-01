@@ -20,6 +20,7 @@ Project ini dibangun dengan Bun, Elysia, Drizzle ORM, dan MySQL. Struktur kode d
 ## Library Utama
 
 - `elysia`: framework HTTP untuk membuat API.
+- `@elysiajs/swagger`: plugin untuk membuat halaman Swagger UI dan OpenAPI JSON.
 - `drizzle-orm`: ORM untuk query database secara typed.
 - `mysql2`: driver koneksi MySQL.
 - `drizzle-kit`: generate dan apply migration dari schema Drizzle.
@@ -133,6 +134,22 @@ Index dan relation:
 ## API yang Tersedia
 
 Semua endpoint berada di bawah prefix dari `API_PREFIX`, default-nya `/api`.
+
+## Swagger Documentation
+
+Setelah server berjalan, Swagger UI tersedia di:
+
+```text
+http://localhost:3000/api/swagger
+```
+
+OpenAPI JSON tersedia di:
+
+```text
+http://localhost:3000/api/swagger/json
+```
+
+Gunakan token dari endpoint `POST /api/users/login` untuk mencoba endpoint yang membutuhkan bearer auth seperti `GET /api/users/current` dan `DELETE /api/users/logout`.
 
 ### `GET /api/`
 
@@ -353,6 +370,7 @@ Test yang tersedia:
 
 - `tests/health.test.ts`: test endpoint health.
 - `tests/root.test.ts`: test root endpoint di bawah API prefix.
+- `tests/swagger.test.ts`: test halaman Swagger UI dan OpenAPI JSON.
 - `tests/users.test.ts`: test registrasi, duplicate email, login, current user, logout, dan integration flow.
 
 ## Scripts
