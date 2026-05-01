@@ -6,6 +6,7 @@ import {
   InvalidLoginError,
   type LoginUserFn,
   type LoginUserInput,
+  type LogoutUserFn,
   type RegisterUserFn,
   type RegisterUserInput,
   UnauthorizedError,
@@ -28,6 +29,12 @@ const requestToLogin = (payload: unknown): Request =>
 const requestToCurrentUser = (authorization?: string): Request =>
   new Request("http://localhost/api/users/current", {
     method: "GET",
+    headers: authorization ? { authorization } : undefined,
+  });
+
+const requestToLogout = (authorization?: string): Request =>
+  new Request("http://localhost/api/users/logout", {
+    method: "DELETE",
     headers: authorization ? { authorization } : undefined,
   });
 
@@ -208,6 +215,59 @@ describe("current user", () => {
 
     const app = createApp({ getCurrentUserByToken: getCurrentUserByTokenMock });
     const response = await app.handle(requestToCurrentUser("Bearer invalid-token"));
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Unauthorized" });
+  });
+});
+
+describe("users logout", () => {
+  it("logs out user for valid bearer token", async () => {
+    let capturedToken: string | null = null;
+
+    const logoutUserByTokenMock: LogoutUserFn = mock(async (token) => {
+      capturedToken = token;
+    });
+
+    const app = createApp({ logoutUserByToken: logoutUserByTokenMock });
+    const response = await app.handle(requestToLogout("Bearer test-token"));
+
+    expect(response.status).toBe(200);
+    expect(capturedToken).toBe("test-token");
+    expect(await response.json()).toEqual({ data: "OK" });
+  });
+
+  it("returns unauthorized when logout authorization header is missing", async () => {
+    const logoutUserByTokenMock: LogoutUserFn = mock(async () => {
+      throw new Error("must not be called");
+    });
+
+    const app = createApp({ logoutUserByToken: logoutUserByTokenMock });
+    const response = await app.handle(requestToLogout());
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Unauthorized" });
+  });
+
+  it("returns unauthorized for non-bearer logout authorization header", async () => {
+    const logoutUserByTokenMock: LogoutUserFn = mock(async () => {
+      throw new Error("must not be called");
+    });
+
+    const app = createApp({ logoutUserByToken: logoutUserByTokenMock });
+    const response = await app.handle(requestToLogout("Basic abc123"));
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Unauthorized" });
+  });
+
+  it("returns unauthorized for invalid logout token", async () => {
+    const logoutUserByTokenMock: LogoutUserFn = mock(async () => {
+      throw new UnauthorizedError();
+    });
+
+    const app = createApp({ logoutUserByToken: logoutUserByTokenMock });
+    const response = await app.handle(requestToLogout("Bearer invalid-token"));
 
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "Unauthorized" });

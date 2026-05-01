@@ -27,6 +27,8 @@ export type CurrentUser = {
 
 export type GetCurrentUserFn = (token: string) => Promise<CurrentUser>;
 
+export type LogoutUserFn = (token: string) => Promise<void>;
+
 export class EmailAlreadyRegisteredError extends Error {
   constructor() {
     super("Email sudah terdaftar");
@@ -144,4 +146,24 @@ export const getCurrentUserByToken: GetCurrentUserFn = async (token) => {
   }
 
   return userBySession[0];
+};
+
+export const logoutUserByToken: LogoutUserFn = async (token) => {
+  const normalizedToken = token.trim();
+
+  if (!normalizedToken) {
+    throw new UnauthorizedError();
+  }
+
+  const existingSession = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(eq(sessions.token, normalizedToken))
+    .limit(1);
+
+  if (existingSession.length === 0) {
+    throw new UnauthorizedError();
+  }
+
+  await db.delete(sessions).where(eq(sessions.token, normalizedToken));
 };
