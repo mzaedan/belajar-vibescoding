@@ -14,15 +14,39 @@ import {
 } from "../services/users-service";
 
 const registerUserBodySchema = t.Object({
-  name: t.String({ minLength: 1 }),
-  email: t.String({ minLength: 1 }),
-  password: t.String({ minLength: 1 }),
+  name: t.String({
+    minLength: 1,
+    description: "Nama user.",
+    examples: ["Zaedan"],
+  }),
+  email: t.String({
+    minLength: 1,
+    description: "Email user yang akan dinormalisasi menjadi lowercase.",
+    examples: ["zaedan@example.com"],
+  }),
+  password: t.String({
+    minLength: 1,
+    description: "Password user yang akan disimpan sebagai hash bcrypt.",
+    examples: ["rahasia"],
+  }),
 });
 
 const loginUserBodySchema = t.Object({
-  name: t.String({ minLength: 1 }),
-  email: t.String({ minLength: 1 }),
-  password: t.String({ minLength: 1 }),
+  name: t.String({
+    minLength: 1,
+    description: "Nama user.",
+    examples: ["Zaedan"],
+  }),
+  email: t.String({
+    minLength: 1,
+    description: "Email user.",
+    examples: ["zaedan@example.com"],
+  }),
+  password: t.String({
+    minLength: 1,
+    description: "Password user.",
+    examples: ["rahasia"],
+  }),
 });
 
 const parseBearerToken = (authorization?: string): string | null => {
@@ -77,6 +101,22 @@ export const createUsersRoutes = (
     },
     {
       body: registerUserBodySchema,
+      detail: {
+        tags: ["Users"],
+        summary: "Register user",
+        description: "Membuat user baru dengan email unik dan password bcrypt.",
+        responses: {
+          201: {
+            description: "User berhasil dibuat.",
+          },
+          400: {
+            description: "Payload kosong, tidak lengkap, atau tidak valid.",
+          },
+          409: {
+            description: "Email sudah terdaftar.",
+          },
+        },
+      },
     },
   );
 
@@ -112,61 +152,117 @@ export const createUsersRoutes = (
     },
     {
       body: loginUserBodySchema,
+      detail: {
+        tags: ["Users"],
+        summary: "Login user",
+        description: "Memvalidasi credential user dan membuat session token.",
+        responses: {
+          200: {
+            description: "Login berhasil dan token session dikembalikan.",
+          },
+          400: {
+            description: "Payload kosong, tidak lengkap, atau tidak valid.",
+          },
+          401: {
+            description: "Email atau password salah.",
+          },
+        },
+      },
     },
   );
 
-  app.get("/users/current", async ({ headers, set }) => {
-    const token = parseBearerToken(headers.authorization);
+  app.get(
+    "/users/current",
+    async ({ headers, set }) => {
+      const token = parseBearerToken(headers.authorization);
 
-    if (!token) {
-      set.status = 401;
-      return { error: "Unauthorized" };
-    }
+      if (!token) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
 
-    try {
-      const user = await (deps.getCurrentUserByToken ?? getCurrentUserByToken)(token);
+      try {
+        const user = await (deps.getCurrentUserByToken ?? getCurrentUserByToken)(
+          token,
+        );
 
-      set.status = 200;
-      return {
-        data: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          created_at: user.createdAt,
+        set.status = 200;
+        return {
+          data: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            created_at: user.createdAt,
+          },
+        };
+      } catch (error) {
+        if (error instanceof UnauthorizedError) {
+          set.status = 401;
+          return { error: error.message };
+        }
+
+        throw error;
+      }
+    },
+    {
+      detail: {
+        tags: ["Users"],
+        summary: "Get current user",
+        description: "Mengambil data user aktif berdasarkan bearer token.",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "Data user aktif berhasil dikembalikan.",
+          },
+          401: {
+            description: "Bearer token tidak ada, tidak valid, atau session tidak ditemukan.",
+          },
         },
-      };
-    } catch (error) {
-      if (error instanceof UnauthorizedError) {
+      },
+    },
+  );
+
+  app.delete(
+    "/users/logout",
+    async ({ headers, set }) => {
+      const token = parseBearerToken(headers.authorization);
+
+      if (!token) {
         set.status = 401;
-        return { error: error.message };
+        return { error: "Unauthorized" };
       }
 
-      throw error;
-    }
-  });
+      try {
+        await (deps.logoutUserByToken ?? logoutUserByToken)(token);
 
-  app.delete("/users/logout", async ({ headers, set }) => {
-    const token = parseBearerToken(headers.authorization);
+        set.status = 200;
+        return { data: "OK" };
+      } catch (error) {
+        if (error instanceof UnauthorizedError) {
+          set.status = 401;
+          return { error: error.message };
+        }
 
-    if (!token) {
-      set.status = 401;
-      return { error: "Unauthorized" };
-    }
-
-    try {
-      await (deps.logoutUserByToken ?? logoutUserByToken)(token);
-
-      set.status = 200;
-      return { data: "OK" };
-    } catch (error) {
-      if (error instanceof UnauthorizedError) {
-        set.status = 401;
-        return { error: error.message };
+        throw error;
       }
-
-      throw error;
-    }
-  });
+    },
+    {
+      detail: {
+        tags: ["Users"],
+        summary: "Logout user",
+        description: "Menghapus session berdasarkan bearer token.",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "Logout berhasil dan session dihapus.",
+          },
+          401: {
+            description: "Bearer token tidak ada, tidak valid, atau session tidak ditemukan.",
+          },
+        },
+      },
+    },
+  );
 
   return app;
 };

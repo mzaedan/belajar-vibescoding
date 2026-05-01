@@ -29,6 +29,7 @@ export type GetCurrentUserFn = (token: string) => Promise<CurrentUser>;
 
 export type LogoutUserFn = (token: string) => Promise<void>;
 
+/** Error khusus saat email yang dipakai register sudah ada di database. */
 export class EmailAlreadyRegisteredError extends Error {
   constructor() {
     super("Email sudah terdaftar");
@@ -36,6 +37,7 @@ export class EmailAlreadyRegisteredError extends Error {
   }
 }
 
+/** Error khusus saat kombinasi email dan password tidak valid. */
 export class InvalidLoginError extends Error {
   constructor() {
     super("Email atau password Salah");
@@ -43,6 +45,7 @@ export class InvalidLoginError extends Error {
   }
 }
 
+/** Error khusus saat token session tidak valid atau tidak ditemukan. */
 export class UnauthorizedError extends Error {
   constructor() {
     super("Unauthorized");
@@ -50,8 +53,10 @@ export class UnauthorizedError extends Error {
   }
 }
 
+/** Merapikan email agar comparison dan penyimpanan selalu konsisten. */
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
+/** Mengecek apakah error database berasal dari pelanggaran unique constraint. */
 const isDuplicateKeyError = (error: unknown): boolean => {
   if (!error || typeof error !== "object") return false;
 
@@ -59,6 +64,7 @@ const isDuplicateKeyError = (error: unknown): boolean => {
   return maybeError.code === "ER_DUP_ENTRY" || maybeError.errno === 1062;
 };
 
+/** Membuat user baru, melakukan hash password, dan menolak email duplikat. */
 export const registerUser: RegisterUserFn = async (input) => {
   const email = normalizeEmail(input.email);
 
@@ -92,6 +98,7 @@ export const registerUser: RegisterUserFn = async (input) => {
   }
 };
 
+/** Memvalidasi credential user, membuat session baru, lalu mengembalikan token. */
 export const loginUser: LoginUserFn = async (input) => {
   const email = normalizeEmail(input.email);
 
@@ -122,6 +129,7 @@ export const loginUser: LoginUserFn = async (input) => {
   return token;
 };
 
+/** Mengambil data user aktif berdasarkan token session yang dikirim client. */
 export const getCurrentUserByToken: GetCurrentUserFn = async (token) => {
   const normalizedToken = token.trim();
 
@@ -148,6 +156,7 @@ export const getCurrentUserByToken: GetCurrentUserFn = async (token) => {
   return userBySession[0];
 };
 
+/** Menghapus session berdasarkan token agar user dianggap logout. */
 export const logoutUserByToken: LogoutUserFn = async (token) => {
   const normalizedToken = token.trim();
 
