@@ -6,6 +6,8 @@ import {
   getCurrentUserByToken,
   type GetCurrentUserFn,
   loginUser,
+  logoutUserByToken,
+  type LogoutUserFn,
   registerUser,
   type LoginUserFn,
   type RegisterUserFn,
@@ -15,6 +17,7 @@ type CreateAppDeps = {
   registerUser?: RegisterUserFn;
   loginUser?: LoginUserFn;
   getCurrentUserByToken?: GetCurrentUserFn;
+  logoutUserByToken?: LogoutUserFn;
 };
 
 export const createApp = (deps: CreateAppDeps = {}): Elysia =>
@@ -40,5 +43,6 @@ export const createApp = (deps: CreateAppDeps = {}): Elysia =>
         registerUser: deps.registerUser ?? registerUser,
         loginUser: deps.loginUser ?? loginUser,
         getCurrentUserByToken: deps.getCurrentUserByToken ?? getCurrentUserByToken,
+        logoutUserByToken: deps.logoutUserByToken ?? logoutUserByToken,
       }),
     );

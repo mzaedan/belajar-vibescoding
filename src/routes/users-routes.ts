@@ -5,6 +5,8 @@ import {
   type GetCurrentUserFn,
   InvalidLoginError,
   loginUser,
+  logoutUserByToken,
+  type LogoutUserFn,
   type LoginUserFn,
   registerUser,
   type RegisterUserFn,
@@ -38,6 +40,7 @@ export const createUsersRoutes = (
     registerUser?: RegisterUserFn;
     loginUser?: LoginUserFn;
     getCurrentUserByToken?: GetCurrentUserFn;
+    logoutUserByToken?: LogoutUserFn;
   } = {},
 ): Elysia => {
   const app = new Elysia();
@@ -132,6 +135,29 @@ export const createUsersRoutes = (
           created_at: user.createdAt,
         },
       };
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        set.status = 401;
+        return { error: error.message };
+      }
+
+      throw error;
+    }
+  });
+
+  app.delete("/users/logout", async ({ headers, set }) => {
+    const token = parseBearerToken(headers.authorization);
+
+    if (!token) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    try {
+      await (deps.logoutUserByToken ?? logoutUserByToken)(token);
+
+      set.status = 200;
+      return { data: "OK" };
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         set.status = 401;
